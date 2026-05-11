@@ -57,6 +57,46 @@ func TestLoad_BadQueueFullBehavior(t *testing.T) {
 	}
 }
 
+func TestLoad_BadSignatureMaxAge(t *testing.T) {
+	t.Setenv("SGOTEL_SENDGRID_PUBLIC_KEY", "dummy")
+	t.Setenv("SGOTEL_SIGNATURE_MAX_AGE", "not-a-duration")
+	if _, err := Load(); err == nil {
+		t.Fatal("want error on bad SGOTEL_SIGNATURE_MAX_AGE")
+	}
+}
+
+func TestLoad_BadQueueSize(t *testing.T) {
+	t.Setenv("SGOTEL_SENDGRID_PUBLIC_KEY", "dummy")
+	t.Setenv("SGOTEL_QUEUE_SIZE", "not-an-int")
+	if _, err := Load(); err == nil {
+		t.Fatal("want error on bad SGOTEL_QUEUE_SIZE")
+	}
+}
+
+func TestLoad_QueueSizeTooSmall(t *testing.T) {
+	t.Setenv("SGOTEL_SENDGRID_PUBLIC_KEY", "dummy")
+	t.Setenv("SGOTEL_QUEUE_SIZE", "0")
+	if _, err := Load(); err == nil {
+		t.Fatal("want error on SGOTEL_QUEUE_SIZE=0")
+	}
+}
+
+func TestLoad_RedactDropAndShed(t *testing.T) {
+	t.Setenv("SGOTEL_SENDGRID_PUBLIC_KEY", "dummy")
+	t.Setenv("SGOTEL_REDACT_EMAIL", "drop")
+	t.Setenv("SGOTEL_QUEUE_FULL_BEHAVIOR", "shed")
+	c, err := Load()
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if c.RedactEmail != RedactDrop {
+		t.Errorf("RedactEmail: %q", c.RedactEmail)
+	}
+	if c.QueueFullBehavior != QueueFullShed {
+		t.Errorf("QueueFullBehavior: %q", c.QueueFullBehavior)
+	}
+}
+
 func TestLoad_Overrides(t *testing.T) {
 	t.Setenv("SGOTEL_SENDGRID_PUBLIC_KEY", "dummy")
 	t.Setenv("SGOTEL_LISTEN_ADDR", ":9000")

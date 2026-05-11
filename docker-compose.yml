@@ -1,0 +1,73 @@
+# Docker Compose for local development and testing.
+#
+# Brings up sgotel plus an OpenTelemetry Collector that prints received logs
+# and metrics to stdout, so you can verify end-to-end flow without a real
+# OTel backend.
+#
+# Usage:
+#   docker-compose up --build       # Build sgotel image from source
+#
+# Using a pre-built image (PR builds or releases):
+#   SGOTEL_IMAGE=ghcr.io/tight-line/sgotel:pr-123-abc1234 docker-compose up
+#
+# Or set in .env:
+#   SGOTEL_IMAGE=ghcr.io/tight-line/sgotel:0.1.0
+#
+# The webhook endpoint will be at http://localhost:8080/webhook.
+# Set SGOTEL_SENDGRID_PUBLIC_KEY in your environment or .env first.
+
+services:
+  sgotel:
+    image: ${SGOTEL_IMAGE:-}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      SGOTEL_SENDGRID_PUBLIC_KEY: ${SGOTEL_SENDGRID_PUBLIC_KEY:-}
+      SGOTEL_REDACT_EMAIL: ${SGOTEL_REDACT_EMAIL:-none}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SERVICE_NAME: sgotel
+    depends_on:
+      - otel-collector
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.116.1
+    command: ["--config=/etc/otelcol/config.yaml"]
+    ports:
+      - "4317:4317"  # OTLP gRPC
+      - "4318:4318"  # OTLP HTTP
+    configs:
+      - source: otelcol-config
+        target: /etc/otelcol/config.yaml
+
+configs:
+  otelcol-config:
+    content: |
+      receivers:
+        otlp:
+          protocols:
+            grpc:
+              endpoint: 0.0.0.0:4317
+            http:
+              endpoint: 0.0.0.0:4318
+
+      processors:
+        batch:
+
+      exporters:
+        debug:
+          verbosity: detailed
+
+      service:
+        pipelines:
+          logs:
+            receivers: [otlp]
+            processors: [batch]
+            exporters: [debug]
+          metrics:
+            receivers: [otlp]
+            processors: [batch]
+            exporters: [debug]

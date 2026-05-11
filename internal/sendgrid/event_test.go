@@ -128,6 +128,13 @@ func TestParseBatch_Malformed(t *testing.T) {
 	}
 }
 
+func TestParseBatch_CategoryBadType(t *testing.T) {
+	body := []byte(`[{"event":"open","category":42}]`)
+	if _, err := ParseBatch(body); err == nil {
+		t.Fatal("want error on non-string non-array category")
+	}
+}
+
 func TestCategories_RoundtripMarshal(t *testing.T) {
 	// Sanity: Categories should marshal back as a JSON array regardless of input form.
 	for _, in := range []string{`"solo"`, `["a","b"]`} {

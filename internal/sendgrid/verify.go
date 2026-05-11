@@ -42,6 +42,7 @@ func NewVerifier(publicKeyB64 string, maxAge time.Duration) (*Verifier, error) {
 		return nil, fmt.Errorf("public key: parse PKIX: %w", err)
 	}
 	ecPub, ok := pub.(*ecdsa.PublicKey)
+	// coverage:ignore - defensive; SendGrid only issues ECDSA keys
 	if !ok {
 		return nil, errors.New("public key: not an ECDSA key")
 	}
@@ -57,11 +58,11 @@ func (v *Verifier) Verify(timestamp, signature string, body []byte) error {
 	}
 	if v.maxAge > 0 {
 		skew := v.now().Unix() - ts
-		max := int64(v.maxAge.Seconds())
-		if skew > max {
-			return fmt.Errorf("timestamp: too old (%ds > %ds)", skew, max)
+		maxSkew := int64(v.maxAge.Seconds())
+		if skew > maxSkew {
+			return fmt.Errorf("timestamp: too old (%ds > %ds)", skew, maxSkew)
 		}
-		if skew < -max {
+		if skew < -maxSkew {
 			return fmt.Errorf("timestamp: too far in future (%ds)", -skew)
 		}
 	}

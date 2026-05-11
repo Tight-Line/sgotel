@@ -1,0 +1,59 @@
+# golangci-lint configuration
+# https://golangci-lint.run/usage/configuration/
+
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - unconvert
+    - unparam
+    - gocritic
+  settings:
+    misspell:
+      locale: US
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        - hugeParam
+        - rangeValCopy
+        - octalLiteral
+        - emptyStringTest
+        - deprecatedComment
+        - httpNoBody
+  exclusions:
+    rules:
+      - path: "_test\\.go"
+        linters:
+          - unparam
+          - errcheck
+      - source: "defer (resp|client|lp|mp)\\..*(Close|Shutdown)"
+        linters:
+          - errcheck
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - github.com/tight-line/sgotel
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

@@ -207,6 +207,23 @@ func TestHandler_MethodNotAllowed(t *testing.T) {
 	}
 }
 
+func TestHandler_NewWithNilRecorder(t *testing.T) {
+	// Verify that passing a nil RequestRecorder falls back to NopRecorder
+	// without panicking on the first recorded call.
+	priv, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	pubDER, _ := x509.MarshalPKIXPublicKey(&priv.PublicKey)
+	v, _ := sendgrid.NewVerifier(base64.StdEncoding.EncodeToString(pubDER), 0)
+	p := publisher.New(&recordedSink{}, 1, config.QueueFullBlock)
+	h := New(v, p, nil, nil)
+	if h.Recorder == nil {
+		t.Fatal("nil recorder should be replaced with NopRecorder")
+	}
+	// Exercise both NopRecorder methods.
+	ctx := context.Background()
+	h.Recorder.RecordBatch(ctx, 1)
+	h.Recorder.RecordRequest(ctx, "ok")
+}
+
 func TestHandler_QueueFullShed(t *testing.T) {
 	// No workers: the queue fills on the first event, second event sheds.
 	f := newFixture(t, config.QueueFullShed, 1, 0)

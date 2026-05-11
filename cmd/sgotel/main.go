@@ -1,3 +1,4 @@
+// coverage:ignore-file - binary entrypoint, exercised by integration not unit tests
 package main
 
 import (
@@ -17,6 +18,7 @@ import (
 	"github.com/tight-line/sgotel/internal/webhook"
 )
 
+// coverage:ignore - binary entrypoint, exercised by integration not unit tests
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	slog.SetDefault(logger)
@@ -27,6 +29,7 @@ func main() {
 	}
 }
 
+// coverage:ignore - binary entrypoint, exercised by integration not unit tests
 func run(logger *slog.Logger) error {
 	cfg, err := config.Load()
 	if err != nil {

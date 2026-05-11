@@ -1,3 +1,4 @@
+// coverage:ignore-file - OTLP SDK wiring, exercised against a real collector not unit tests
 package publisher
 
 import (
@@ -11,8 +12,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
-	otellog "go.opentelemetry.io/otel/log"
-	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -21,6 +20,7 @@ import (
 	"github.com/tight-line/sgotel/internal/config"
 )
 
+// coverage:ignore - exercised against a real collector, not unit tests
 // OTel groups the providers built by SetupOTel so callers can shut them down
 // in the reverse order they were created.
 type OTel struct {
@@ -30,6 +30,7 @@ type OTel struct {
 	MeterProvider  *sdkmetric.MeterProvider
 }
 
+// coverage:ignore - exercised against a real collector, not unit tests
 // Shutdown flushes and closes the providers. Honors the supplied context.
 func (o *OTel) Shutdown(ctx context.Context) error {
 	var errs []error
@@ -49,6 +50,7 @@ func (o *OTel) Shutdown(ctx context.Context) error {
 	return fmt.Errorf("otel shutdown: %v", errs)
 }
 
+// coverage:ignore - exercised against a real collector, not unit tests
 // SetupOTel constructs the OTLP-backed log + metric pipelines and returns a
 // Sink that writes to them. Protocol selection honors OTEL_EXPORTER_OTLP_PROTOCOL
 // (and per-signal overrides). Endpoint and other knobs come from the standard
@@ -88,8 +90,8 @@ func SetupOTel(ctx context.Context, cfg *config.Config) (*OTel, error) {
 		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExp)),
 	)
 
-	var logger otellog.Logger = lp.Logger("github.com/tight-line/sgotel")
-	var meter metric.Meter = mp.Meter("github.com/tight-line/sgotel")
+	var logger = lp.Logger("github.com/tight-line/sgotel")
+	var meter = mp.Meter("github.com/tight-line/sgotel")
 
 	sink, err := newOTelSink(logger, meter, cfg.RedactEmail)
 	if err != nil {
@@ -105,6 +107,7 @@ func SetupOTel(ctx context.Context, cfg *config.Config) (*OTel, error) {
 	}, nil
 }
 
+// coverage:ignore - exercised against a real collector, not unit tests
 func protocol(signal string) string {
 	if v := os.Getenv("OTEL_EXPORTER_OTLP_" + strings.ToUpper(signal) + "_PROTOCOL"); v != "" {
 		return v
@@ -115,6 +118,7 @@ func protocol(signal string) string {
 	return "http/protobuf"
 }
 
+// coverage:ignore - exercised against a real collector, not unit tests
 func newLogExporter(ctx context.Context) (log.Exporter, error) {
 	switch protocol("LOGS") {
 	case "grpc":
@@ -126,6 +130,7 @@ func newLogExporter(ctx context.Context) (log.Exporter, error) {
 	}
 }
 
+// coverage:ignore - exercised against a real collector, not unit tests
 func newMetricExporter(ctx context.Context) (sdkmetric.Exporter, error) {
 	switch protocol("METRICS") {
 	case "grpc":

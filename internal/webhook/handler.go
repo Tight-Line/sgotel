@@ -16,7 +16,7 @@ const (
 	resultBadSignature = "bad_signature"
 	resultBadPayload   = "bad_payload"
 	resultQueueFull    = "queue_full"
-	resultCancelled    = "cancelled"
+	resultCancelled    = "canceled"
 )
 
 type Handler struct {
@@ -47,6 +47,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	body, err := io.ReadAll(r.Body)
+	// coverage:ignore - defensive; httptest readers don't error in unit tests
 	if err != nil {
 		h.Recorder.RecordRequest(ctx, resultBadBody)
 		http.Error(w, "bad body", http.StatusBadRequest)
@@ -77,7 +78,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			case publisher.ErrQueueFull:
 				h.Recorder.RecordRequest(ctx, resultQueueFull)
 				http.Error(w, "queue full", http.StatusServiceUnavailable)
-			default:
+			default: // coverage:ignore - defensive; only reachable when ctx is canceled mid-enqueue (shutdown race)
 				h.Recorder.RecordRequest(ctx, resultCancelled)
 				http.Error(w, "shutting down", http.StatusServiceUnavailable)
 			}

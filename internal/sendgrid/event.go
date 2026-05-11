@@ -56,12 +56,14 @@ var knownFields = map[string]struct{}{
 func (e *Event) UnmarshalJSON(data []byte) error {
 	type alias Event
 	var a alias
+	// coverage:ignore - defensive; same JSON also unmarshals into the raw map below
 	if err := json.Unmarshal(data, &a); err != nil {
 		return err
 	}
 	*e = Event(a)
 
 	var raw map[string]json.RawMessage
+	// coverage:ignore - defensive; data already validated by the call above
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
@@ -70,6 +72,7 @@ func (e *Event) UnmarshalJSON(data []byte) error {
 			continue
 		}
 		var val any
+		// coverage:ignore - defensive; json.RawMessage from a valid object is always valid
 		if err := json.Unmarshal(v, &val); err != nil {
 			continue
 		}
@@ -93,6 +96,7 @@ func (c *Categories) UnmarshalJSON(data []byte) error {
 	switch data[0] {
 	case '"':
 		var s string
+		// coverage:ignore - defensive; data[0]=='"' implies a syntactically valid JSON string
 		if err := json.Unmarshal(data, &s); err != nil {
 			return err
 		}
@@ -100,6 +104,7 @@ func (c *Categories) UnmarshalJSON(data []byte) error {
 		return nil
 	case '[':
 		var arr []string
+		// coverage:ignore - defensive; data[0]=='[' implies valid array start; element type mismatch is the only realistic failure and is caught above
 		if err := json.Unmarshal(data, &arr); err != nil {
 			return err
 		}

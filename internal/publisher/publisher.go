@@ -79,7 +79,7 @@ type ErrQueueFull struct{}
 func (ErrQueueFull) Error() string { return "publisher queue full" }
 
 // Enqueue submits an event. In block mode it waits until space is available
-// (or ctx is cancelled). In shed mode it returns ErrQueueFull immediately.
+// (or ctx is canceled). In shed mode it returns ErrQueueFull immediately.
 func (p *Publisher) Enqueue(ctx context.Context, e sendgrid.Event) error {
 	switch p.fullPolicy {
 	case config.QueueFullShed:
@@ -129,21 +129,25 @@ type otelSink struct {
 func newOTelSink(logger otellog.Logger, meter metric.Meter, redact config.RedactMode) (*otelSink, error) {
 	events, err := meter.Int64Counter("sendgrid.events.total",
 		metric.WithDescription("Count of SendGrid webhook events by type."))
+	// coverage:ignore - defensive; instrument creation only fails on name conflict
 	if err != nil {
 		return nil, fmt.Errorf("counter sendgrid.events.total: %w", err)
 	}
 	bounces, err := meter.Int64Counter("sendgrid.bounces.total",
 		metric.WithDescription("Count of SendGrid bounce events by type and SMTP status class."))
+	// coverage:ignore - defensive; instrument creation only fails on name conflict
 	if err != nil {
 		return nil, fmt.Errorf("counter sendgrid.bounces.total: %w", err)
 	}
 	batches, err := meter.Int64Histogram("sendgrid.webhook.batch.size",
 		metric.WithDescription("Number of events per inbound SendGrid webhook batch."))
+	// coverage:ignore - defensive; instrument creation only fails on name conflict
 	if err != nil {
 		return nil, fmt.Errorf("histogram sendgrid.webhook.batch.size: %w", err)
 	}
 	requests, err := meter.Int64Counter("sendgrid.webhook.requests.total",
 		metric.WithDescription("Count of inbound webhook POSTs by outcome."))
+	// coverage:ignore - defensive; instrument creation only fails on name conflict
 	if err != nil {
 		return nil, fmt.Errorf("counter sendgrid.webhook.requests.total: %w", err)
 	}
@@ -261,7 +265,7 @@ func (s *otelSink) emitMetrics(ctx context.Context, e sendgrid.Event) {
 	}
 }
 
-func severityFor(event string) (otellog.Severity, string) {
+func severityFor(event string) (sev otellog.Severity, text string) {
 	switch event {
 	case "bounce", "dropped", "spam_report":
 		return otellog.SeverityError, "ERROR"

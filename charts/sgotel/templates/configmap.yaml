@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sgotel.fullname" . }}-config
+  labels:
+    {{- include "sgotel.labels" . | nindent 4 }}
+data:
+  SGOTEL_LISTEN_ADDR: {{ .Values.sgotel.listenAddr | quote }}
+  SGOTEL_WEBHOOK_PATH: {{ .Values.sgotel.webhookPath | quote }}
+  SGOTEL_SIGNATURE_MAX_AGE: {{ .Values.sgotel.signatureMaxAge | quote }}
+  SGOTEL_REDACT_EMAIL: {{ .Values.sgotel.redactEmail | quote }}
+  SGOTEL_QUEUE_SIZE: {{ .Values.sgotel.queueSize | quote }}
+  SGOTEL_QUEUE_FULL_BEHAVIOR: {{ .Values.sgotel.queueFullBehavior | quote }}
+  OTEL_SERVICE_NAME: {{ .Values.serviceName | quote }}
+  {{- if .Values.otlp.endpoint }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.otlp.endpoint | quote }}
+  {{- end }}
+  OTEL_EXPORTER_OTLP_PROTOCOL: {{ .Values.otlp.protocol | quote }}

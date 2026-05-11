@@ -47,11 +47,11 @@ func TestSeverityFor(t *testing.T) {
 
 func TestStatusClass(t *testing.T) {
 	cases := map[string]string{
-		"":           "unknown",
-		"250 OK":     "2xx",
-		"421":        "4xx",
-		"5.1.1":      "5xx",
-		"weird":      "unknown",
+		"":       "unknown",
+		"250 OK": "2xx",
+		"421":    "4xx",
+		"5.1.1":  "5xx",
+		"weird":  "unknown",
 	}
 	for in, want := range cases {
 		if got := statusClass(in); got != want {
@@ -115,6 +115,29 @@ func TestAnyToLogValue(t *testing.T) {
 	}
 	if v := anyToLogValue(map[string]any{"k": "v"}); v.Kind() != otellog.KindMap {
 		t.Errorf("map kind: %v", v.Kind())
+	}
+	// Unknown type falls back to a stringified representation.
+	type customType struct{ X int }
+	if v := anyToLogValue(customType{X: 7}); v.Kind() != otellog.KindString {
+		t.Errorf("unknown type kind: %v", v.Kind())
+	}
+}
+
+func TestStatusClass_2xxAndUnknown(t *testing.T) {
+	if got := statusClass("250"); got != "2xx" {
+		t.Errorf("2xx: %q", got)
+	}
+	if got := statusClass("999"); got != "unknown" {
+		t.Errorf("unknown class: %q", got)
+	}
+}
+
+func TestEmptyToUnknown(t *testing.T) {
+	if got := emptyToUnknown(""); got != "unknown" {
+		t.Errorf("empty: %q", got)
+	}
+	if got := emptyToUnknown("hard"); got != "hard" {
+		t.Errorf("non-empty: %q", got)
 	}
 }
 
@@ -189,6 +212,39 @@ func TestPublisher_BlockHonorsContextCancel(t *testing.T) {
 	sCtx, sCancel := context.WithTimeout(bg, 2*time.Second)
 	defer sCancel()
 	_ = p.Shutdown(sCtx)
+}
+
+func TestNopRecorder(t *testing.T) {
+	// Exercise the no-op methods so they show as covered in the publisher package.
+	r := NopRecorder{}
+	r.RecordBatch(context.Background(), 1)
+	r.RecordRequest(context.Background(), "ok")
+}
+
+func TestErrQueueFull_Error(t *testing.T) {
+	if got := (ErrQueueFull{}).Error(); got == "" {
+		t.Errorf("ErrQueueFull message should not be empty")
+	}
+}
+
+func TestPublisher_ShutdownHonorsContextCancel(t *testing.T) {
+	// Pin a worker on a sink that never returns so Shutdown can't drain
+	// the queue; verify the canceled ctx makes Shutdown return its error.
+	s := &slowSink{hold: make(chan struct{})}
+	p := New(s, 1, config.QueueFullBlock)
+	p.Start(1)
+	_ = p.Enqueue(context.Background(), sendgrid.Event{Event: "a"})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	if err := p.Shutdown(ctx); err == nil {
+		t.Errorf("want shutdown to honor ctx deadline")
+	}
+
+	close(s.hold)
+	finalCtx, finalCancel := context.WithTimeout(context.Background(), time.Second)
+	defer finalCancel()
+	_ = p.Shutdown(finalCtx)
 }
 
 func TestPublisher_ShutdownIdempotent(t *testing.T) {
@@ -280,7 +336,10 @@ func TestOTelSink_LogAttributes(t *testing.T) {
 		SMTPID:      "<smtp-1>",
 		Category:    sendgrid.Categories{"welcome"},
 		URL:         "https://example.com",
+		UserAgent:   "Mozilla/5.0",
 		IP:          "1.2.3.4",
+		Response:    "250 OK",
+		Attempt:     "3",
 		Custom:      map[string]any{"campaign": "spring"},
 	}
 	sink.Publish(context.Background(), e)
@@ -300,14 +359,17 @@ func TestOTelSink_LogAttributes(t *testing.T) {
 		t.Errorf("body: %q", r.body)
 	}
 	want := map[string]string{
-		"sendgrid.event":            "click",
-		"sendgrid.event_id":         "evt-1",
-		"sendgrid.message_id":       "msg-1",
-		"sendgrid.smtp_id":          "<smtp-1>",
-		"sendgrid.email":            "alice@example.com",
-		"sendgrid.url":              "https://example.com",
-		"sendgrid.ip":               "1.2.3.4",
-		"sendgrid.custom.campaign":  "spring",
+		"sendgrid.event":           "click",
+		"sendgrid.event_id":        "evt-1",
+		"sendgrid.message_id":      "msg-1",
+		"sendgrid.smtp_id":         "<smtp-1>",
+		"sendgrid.email":           "alice@example.com",
+		"sendgrid.url":             "https://example.com",
+		"sendgrid.useragent":       "Mozilla/5.0",
+		"sendgrid.ip":              "1.2.3.4",
+		"sendgrid.response":        "250 OK",
+		"sendgrid.attempt":         "3",
+		"sendgrid.custom.campaign": "spring",
 	}
 	for k, v := range want {
 		got, ok := r.attributes[k]

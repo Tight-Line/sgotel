@@ -1,0 +1,15 @@
+apiVersion: v2
+name: sgotel
+description: SendGrid Event Webhook to OpenTelemetry publisher
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - sendgrid
+  - webhook
+  - opentelemetry
+  - otel
+  - observability
+maintainers:
+  - name: Tight Line
+    email: certs@example.com

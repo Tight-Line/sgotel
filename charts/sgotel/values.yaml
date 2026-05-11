@@ -1,0 +1,69 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/tight-line/sgotel
+  pullPolicy: IfNotPresent
+  tag: ""  # defaults to .Chart.AppVersion
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# ==============================================================================
+# SGOtel runtime knobs (rendered into a ConfigMap as SGOTEL_* env vars).
+# ==============================================================================
+sgotel:
+  listenAddr: ":8080"
+  webhookPath: "/webhook"
+  signatureMaxAge: "5m"      # Replay-window check on the signed timestamp; "0" disables.
+  redactEmail: "none"        # one of: none, hash, drop
+  queueSize: 1024            # Buffered channel between handler and publisher.
+  queueFullBehavior: "block" # block (wait for room) or shed (return 503)
+
+# ==============================================================================
+# SendGrid Signed Event Webhook public key (base64 PKIX DER from SendGrid UI).
+# Provide via `sendgridPublicKey` (rendered into a Secret) OR `existingSecret`
+# pointing at a Secret that already contains SGOTEL_SENDGRID_PUBLIC_KEY.
+# ==============================================================================
+sendgridPublicKey: ""
+existingSecret: ""
+
+# ==============================================================================
+# OTLP exporter configuration. All standard OTel env vars are honored.
+# Put authentication headers (Bearer tokens, x-honeycomb-team, etc.) in
+# `otlp.headers` so they end up in the Secret, not the ConfigMap.
+# ==============================================================================
+otlp:
+  endpoint: ""               # e.g. https://api.honeycomb.io
+  protocol: "http/protobuf"  # one of: http/protobuf, grpc
+  # Free-form key=value pairs joined with commas, e.g.
+  #   "x-honeycomb-team=YOUR_KEY"
+  headers: ""
+
+# OTEL_SERVICE_NAME — identifies the relay process. All signals additionally
+# carry the resource attribute messaging.system=sendgrid.
+serviceName: "sgotel"
+
+# ==============================================================================
+# Service / pod settings.
+# ==============================================================================
+service:
+  type: ClusterIP
+  port: 80
+  annotations: {}
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
