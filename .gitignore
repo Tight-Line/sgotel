@@ -1,0 +1,13 @@
+/sgotel
+/bin/
+/dist/
+*.test
+*.out
+coverage.html
+.env
+.env.*
+.DS_Store
+
+# Local tooling state
+.claude/settings.local.json
+.omc/
