@@ -98,6 +98,29 @@ by the underlying exporters.
 | `OTEL_EXPORTER_OTLP_PROTOCOL`     | `http/protobuf`  | Or `grpc`. Per-signal overrides (`..._LOGS_PROTOCOL`, `..._METRICS_PROTOCOL`) are honored. |
 | `OTEL_EXPORTER_OTLP_ENDPOINT`     | (SDK default)    | Collector endpoint.                                                   |
 
+### Helm values
+
+The Helm chart at `charts/sgotel` exposes the same surface plus deployment knobs.
+Highlights:
+
+| Value                       | Default     | Notes                                                                  |
+|-----------------------------|-------------|------------------------------------------------------------------------|
+| `sendgridPublicKey`         | *(required)*| Base64 PKIX DER. Or set `existingSecret` to a Secret containing `SGOTEL_SENDGRID_PUBLIC_KEY`. |
+| `otlp.endpoint`             | `""`        | OTLP endpoint (e.g. an in-cluster collector address).                  |
+| `otlp.protocol`             | `http/protobuf` | Or `grpc`.                                                         |
+| `otlp.headers`              | `""`        | Free-form `k=v,k=v` headers (stored in the Secret).                    |
+| `sgotel.*`                  | (see file)  | One key per `SGOTEL_*` env var.                                        |
+| `service.type`              | `ClusterIP` | Use `LoadBalancer` if exposing directly to the internet.               |
+| `ingress.enabled`           | `false`     | Enables the Ingress template below.                                    |
+| `ingress.className`         | `""`        | Required when `enabled`; chart fails fast otherwise.                   |
+| `ingress.host`              | `""`        | Required when `enabled`. Single hostname (SendGrid points at one URL). |
+| `ingress.path`              | `/webhook`  | Default path; matches the in-pod webhook route.                        |
+| `ingress.tls.enabled`       | `false`     | Set when the ingress controller terminates TLS.                        |
+| `ingress.tls.secretName`    | `""`        | TLS Secret name (cert-manager will create it, or pre-provision it).    |
+
+When fronting sgotel with gatekeeper, leave `ingress` disabled and have gatekeeper
+route a `sendgrid`-typed verifier to `http://<release-name>.<namespace>.svc.cluster.local`.
+
 ## Why no `sg_event_id` dedup
 
 In the happy path SendGrid only re-POSTs an event when it receives a non-2xx

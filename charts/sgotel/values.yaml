@@ -52,6 +52,32 @@ service:
   port: 80
   annotations: {}
 
+# ==============================================================================
+# Ingress: expose sgotel via a Kubernetes Ingress.
+#
+# Leave disabled when fronting sgotel with a LoadBalancer Service, a Gateway
+# API HTTPRoute, or another webhook proxy (e.g. gatekeeper).
+#
+# When enabled, both `className` and `host` are required; the chart fails
+# rendering otherwise so you don't get a silently-broken default.
+#
+# TLS termination is most commonly handled by the ingress controller (set
+# tls.enabled and either let cert-manager issue a cert via annotations, or
+# point tls.secretName at an existing Secret). If a load balancer in front
+# of the ingress already terminates TLS, leave tls.enabled=false.
+# ==============================================================================
+ingress:
+  enabled: false
+  className: ""              # required when enabled, e.g. "nginx", "traefik"
+  host: ""                   # required when enabled, e.g. "sendgrid-webhooks.example.com"
+  path: "/webhook"
+  pathType: "Prefix"
+  annotations: {}
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  tls:
+    enabled: false
+    secretName: ""           # use with cert-manager (the issuer creates this Secret) or pre-provisioned
+
 resources:
   requests:
     cpu: 50m
