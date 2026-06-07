@@ -45,6 +45,22 @@ otlp:
 serviceName: "sgotel"
 
 # ==============================================================================
+# Extra OTel resource attributes (merged into OTEL_RESOURCE_ATTRIBUTES env).
+#
+# The standard way to distinguish per-environment instances (dev/qa/stage/prod)
+# is `deployment.environment.name` — most observability backends auto-facet on
+# it. `service.namespace` groups related services together in service-list views.
+#
+# Keep keys/values simple (alphanumeric, dots, dashes, underscores). Values
+# containing commas, equals signs, or non-ASCII characters need URL-encoding
+# per the OTel env-var spec, which this chart does not do for you.
+# ==============================================================================
+resourceAttributes: {}
+  # deployment.environment.name: prod    # one of dev / qa / stage / prod
+  # service.namespace: tightline
+  # region: us-east-1
+
+# ==============================================================================
 # Service / pod settings.
 # ==============================================================================
 service:

@@ -16,3 +16,10 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.otlp.endpoint | quote }}
   {{- end }}
   OTEL_EXPORTER_OTLP_PROTOCOL: {{ .Values.otlp.protocol | quote }}
+  {{- if .Values.resourceAttributes }}
+  {{- $pairs := list }}
+  {{- range $k := keys .Values.resourceAttributes | sortAlpha }}
+  {{- $pairs = append $pairs (printf "%s=%v" $k (index $.Values.resourceAttributes $k)) }}
+  {{- end }}
+  OTEL_RESOURCE_ATTRIBUTES: {{ join "," $pairs | quote }}
+  {{- end }}
