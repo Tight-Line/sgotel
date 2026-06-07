@@ -97,6 +97,7 @@ by the underlying exporters.
 | `OTEL_SERVICE_NAME`               | `sgotel`         | Standard OTel service name (identifies the relay process, not the upstream). All signals additionally carry the resource attribute `messaging.system=sendgrid` so backends can facet on it. |
 | `OTEL_EXPORTER_OTLP_PROTOCOL`     | `http/protobuf`  | Or `grpc`. Per-signal overrides (`..._LOGS_PROTOCOL`, `..._METRICS_PROTOCOL`) are honored. |
 | `OTEL_EXPORTER_OTLP_ENDPOINT`     | (SDK default)    | Collector endpoint.                                                   |
+| `OTEL_RESOURCE_ATTRIBUTES`        | (none)           | Standard OTel env var, format `k1=v1,k2=v2`. Merged into the resource. Use `deployment.environment.name=<env>` to distinguish per-env installs. |
 
 ### Helm values
 
