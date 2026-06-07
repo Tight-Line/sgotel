@@ -4,6 +4,7 @@ description: SendGrid Event Webhook to OpenTelemetry publisher
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
+icon: https://raw.githubusercontent.com/Tight-Line/sgotel/main/charts/sgotel/icon.png
 keywords:
   - sendgrid
   - webhook
