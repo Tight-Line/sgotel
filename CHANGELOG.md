@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1] - 2026-06-11
+
 ### Added
 
 - Initial scaffold: SendGrid Signed Event Webhook receiver with ECDSA verification
@@ -15,4 +17,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resource attributes: `service.name=sgotel`, `messaging.system=sendgrid`
 - Configurable email redaction (`none`, `hash`, `drop`)
 - Bounded internal queue with `block` or `shed` policies for backpressure
-- Helm chart, Docker image, GitHub Actions CI/release/PR-image workflows
