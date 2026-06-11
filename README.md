@@ -1,0 +1,1 @@
+# sgotel helm chart index
