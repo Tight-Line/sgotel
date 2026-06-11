@@ -86,6 +86,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	h.Logger.Info("webhook batch accepted", "events", len(events))
 	h.Recorder.RecordRequest(ctx, resultOK)
 	w.WriteHeader(http.StatusOK)
 }
