@@ -18,10 +18,16 @@ import (
 	"github.com/tight-line/sgotel/internal/webhook"
 )
 
+// version is set at link time via -ldflags "-X main.version=...". The Dockerfile
+// takes an ARG VERSION (default "dev") and the release/pr-images workflows pass
+// the git tag or PR identifier. Logged on startup for operator visibility.
+var version = "dev"
+
 // coverage:ignore - binary entrypoint, exercised by integration not unit tests
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	slog.SetDefault(logger)
+	logger.Info("starting sgotel", "version", version)
 
 	if err := run(logger); err != nil {
 		logger.Error("fatal", "err", err.Error())
