@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Cap the webhook request body before reading it, so an oversized POST can no
+  longer exhaust memory ahead of signature verification (`SGOTEL_MAX_BODY_BYTES`,
+  default 5 MiB; responds `413`). (#8)
+- Add `ReadTimeout`/`WriteTimeout`/`IdleTimeout` to the HTTP server so a slow or
+  stalled client can't hold a connection open indefinitely. (#8)
+
+### Added
+
+- `SGOTEL_ENQUEUE_TIMEOUT` (default `5s`): in `block` mode, bound how long a
+  request waits for queue space before returning `503` so SendGrid redelivers.
+  Set `0` to wait indefinitely (previous behavior). (#9)
+
 ## [0.0.1] - 2026-06-11
 
 ### Added

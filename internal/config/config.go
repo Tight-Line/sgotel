@@ -28,6 +28,8 @@ type Config struct {
 	WebhookPath       string
 	PublicKey         string
 	SignatureMaxAge   time.Duration
+	MaxBodyBytes      int64
+	EnqueueTimeout    time.Duration
 	RedactEmail       RedactMode
 	QueueSize         int
 	QueueFullBehavior QueueFullBehavior
@@ -59,6 +61,29 @@ func Load() (*Config, error) {
 		return nil, errors.New("SGOTEL_QUEUE_SIZE must be >= 1")
 	}
 	c.QueueSize = qs
+
+	// Cap the request body so an oversized POST can't exhaust memory before the
+	// signature is even checked. Default 5 MiB comfortably covers real SendGrid
+	// batches while staying well under the pod memory limit.
+	mb, err := strconv.ParseInt(getenv("SGOTEL_MAX_BODY_BYTES", "5242880"), 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("SGOTEL_MAX_BODY_BYTES: %w", err)
+	}
+	if mb < 1 {
+		return nil, errors.New("SGOTEL_MAX_BODY_BYTES must be >= 1")
+	}
+	c.MaxBodyBytes = mb
+
+	// In block mode, how long a request waits for queue space before shedding
+	// with a 503 (which SendGrid retries). 0 waits indefinitely.
+	enqueueTimeout, err := time.ParseDuration(getenv("SGOTEL_ENQUEUE_TIMEOUT", "5s"))
+	if err != nil {
+		return nil, fmt.Errorf("SGOTEL_ENQUEUE_TIMEOUT: %w", err)
+	}
+	if enqueueTimeout < 0 {
+		return nil, errors.New("SGOTEL_ENQUEUE_TIMEOUT must be >= 0")
+	}
+	c.EnqueueTimeout = enqueueTimeout
 
 	switch RedactMode(getenv("SGOTEL_REDACT_EMAIL", "none")) {
 	case RedactNone:

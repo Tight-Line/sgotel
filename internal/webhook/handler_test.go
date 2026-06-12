@@ -105,7 +105,7 @@ func newFixture(t *testing.T, fullPolicy config.QueueFullBehavior, queueSize, wo
 		}
 		_ = pub.Shutdown(ctx)
 	})
-	h := New(v, pub, rec, nil)
+	h := New(v, pub, rec, nil, 0, 0)
 	return &fixture{priv: priv, verifier: v, sink: sink, rec: rec, pub: pub, handler: h}
 }
 
@@ -214,9 +214,12 @@ func TestHandler_NewWithNilRecorder(t *testing.T) {
 	pubDER, _ := x509.MarshalPKIXPublicKey(&priv.PublicKey)
 	v, _ := sendgrid.NewVerifier(base64.StdEncoding.EncodeToString(pubDER), 0)
 	p := publisher.New(&recordedSink{}, 1, config.QueueFullBlock)
-	h := New(v, p, nil, nil)
+	h := New(v, p, nil, nil, 0, 0)
 	if h.Recorder == nil {
 		t.Fatal("nil recorder should be replaced with NopRecorder")
+	}
+	if h.MaxBodyBytes != defaultMaxBodyBytes {
+		t.Errorf("non-positive maxBodyBytes should fall back to default, got %d", h.MaxBodyBytes)
 	}
 	// Exercise both NopRecorder methods.
 	ctx := context.Background()
@@ -235,5 +238,42 @@ func TestHandler_QueueFullShed(t *testing.T) {
 	}
 	if got := f.rec.lastRequest(); got != resultQueueFull {
 		t.Errorf("result: %q", got)
+	}
+}
+
+func TestHandler_BodyTooLarge(t *testing.T) {
+	// The size cap must fire before signature verification: a too-large body
+	// with a deliberately bogus signature still returns 413, not 401.
+	f := newFixture(t, config.QueueFullBlock, 16, 1)
+	f.handler.MaxBodyBytes = 8
+	body := []byte(`[{"event":"delivered"},{"event":"open"}]`)
+	rr := f.post(t, body, "1700000000", base64.StdEncoding.EncodeToString([]byte("bogus")))
+	if rr.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status: %d body=%q", rr.Code, rr.Body.String())
+	}
+	if got := f.rec.lastRequest(); got != resultBodyTooLarge {
+		t.Errorf("result: %q", got)
+	}
+	if len(f.sink.get()) != 0 {
+		t.Errorf("sink should be empty, got %v", f.sink.get())
+	}
+}
+
+func TestHandler_EnqueueTimeout(t *testing.T) {
+	// No workers + queue size 1: the first event fills the buffer, the second
+	// blocks until the per-request deadline elapses, then we shed with a 503.
+	f := newFixture(t, config.QueueFullBlock, 1, 0)
+	f.handler.EnqueueTimeout = 20 * time.Millisecond
+	body := []byte(`[{"event":"delivered"},{"event":"open"}]`)
+	ts, sig := f.sign(t, body)
+	rr := f.post(t, body, ts, sig)
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status: %d body=%q", rr.Code, rr.Body.String())
+	}
+	if got := f.rec.lastRequest(); got != resultEnqueueTimeout {
+		t.Errorf("result: %q", got)
+	}
+	if got := rr.Header().Get("Retry-After"); got == "" {
+		t.Errorf("expected Retry-After header on shed response")
 	}
 }

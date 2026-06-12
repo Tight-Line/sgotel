@@ -58,7 +58,7 @@ func run(logger *slog.Logger) error {
 	pub := publisher.New(ot.Sink, cfg.QueueSize, cfg.QueueFullBehavior)
 	pub.Start(runtime.GOMAXPROCS(0))
 
-	handler := webhook.New(verifier, pub, ot.Recorder, logger)
+	handler := webhook.New(verifier, pub, ot.Recorder, logger, cfg.MaxBodyBytes, cfg.EnqueueTimeout)
 
 	mux := http.NewServeMux()
 	mux.Handle(cfg.WebhookPath, handler)
@@ -66,10 +66,20 @@ func run(logger *slog.Logger) error {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	// WriteTimeout must outlast a block-mode enqueue wait so the 503 can still
+	// be written when the queue is saturated; keep a margin above EnqueueTimeout.
+	writeTimeout := 15 * time.Second
+	if cfg.EnqueueTimeout > 0 && cfg.EnqueueTimeout+10*time.Second > writeTimeout {
+		writeTimeout = cfg.EnqueueTimeout + 10*time.Second
+	}
+
 	srv := &http.Server{
 		Addr:              cfg.ListenAddr,
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	serverErr := make(chan error, 1)
