@@ -11,6 +11,8 @@ data:
   SGOTEL_REDACT_EMAIL: {{ .Values.sgotel.redactEmail | quote }}
   SGOTEL_QUEUE_SIZE: {{ .Values.sgotel.queueSize | quote }}
   SGOTEL_QUEUE_FULL_BEHAVIOR: {{ .Values.sgotel.queueFullBehavior | quote }}
+  SGOTEL_MAX_BODY_BYTES: {{ .Values.sgotel.maxBodyBytes | int64 | quote }}
+  SGOTEL_ENQUEUE_TIMEOUT: {{ .Values.sgotel.enqueueTimeout | quote }}
   OTEL_SERVICE_NAME: {{ .Values.serviceName | quote }}
   {{- if .Values.otlp.endpoint }}
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.otlp.endpoint | quote }}

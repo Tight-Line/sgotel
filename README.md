@@ -94,6 +94,8 @@ by the underlying exporters.
 | `SGOTEL_REDACT_EMAIL`             | `none`           | One of `none`, `hash` (SHA-256 hex of lowercased address), `drop`.    |
 | `SGOTEL_QUEUE_SIZE`               | `1024`           | Buffered channel between handler and publishers.                      |
 | `SGOTEL_QUEUE_FULL_BEHAVIOR`      | `block`          | `block` waits for room (and may delay the SendGrid 200); `shed` responds 503. |
+| `SGOTEL_MAX_BODY_BYTES`           | `5242880` (5 MiB)| Max request body accepted; larger POSTs get `413` before signature verification. |
+| `SGOTEL_ENQUEUE_TIMEOUT`          | `5s`             | In `block` mode, how long a request waits for queue space before shedding with `503` (SendGrid retries). `0` waits indefinitely. |
 | `OTEL_SERVICE_NAME`               | `sgotel`         | Standard OTel service name (identifies the relay process, not the upstream). All signals additionally carry the resource attribute `messaging.system=sendgrid` so backends can facet on it. |
 | `OTEL_EXPORTER_OTLP_PROTOCOL`     | `http/protobuf`  | Or `grpc`. Per-signal overrides (`..._LOGS_PROTOCOL`, `..._METRICS_PROTOCOL`) are honored. |
 | `OTEL_EXPORTER_OTLP_ENDPOINT`     | (SDK default)    | Collector endpoint.                                                   |

@@ -19,6 +19,8 @@ sgotel:
   redactEmail: "none"        # one of: none, hash, drop
   queueSize: 1024            # Buffered channel between handler and publisher.
   queueFullBehavior: "block" # block (wait for room) or shed (return 503)
+  maxBodyBytes: 5242880      # Max request body (bytes); larger POSTs get 413 before verification. 5 MiB.
+  enqueueTimeout: "5s"       # block mode: wait this long for queue space, then shed with 503. "0" waits forever.
 
 # ==============================================================================
 # SendGrid Signed Event Webhook public key (base64 PKIX DER from SendGrid UI).
