@@ -155,3 +155,12 @@ go test -race ./...
 Tests are unit + handler-integration only; no live SendGrid, no live OTel
 collector required. The handler test uses an in-memory sink so it exercises
 verification, parsing, queueing, and the request/result metrics path end-to-end.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Please report security issues privately
+per [SECURITY.md](SECURITY.md) rather than opening a public issue.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
