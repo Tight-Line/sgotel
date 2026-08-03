@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Bump google.golang.org/grpc to 1.83.0 (SNYK-GOLANG-GOOGLEGOLANGORGGRPCINTERNALTRANSPORT-18172578)
+
 ## [0.0.2] - 2026-06-12
 
 ### Security
