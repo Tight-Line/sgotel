@@ -1,5 +1,11 @@
 # SGOtel
 
+[![CI](https://github.com/Tight-Line/sgotel/actions/workflows/ci.yml/badge.svg)](https://github.com/Tight-Line/sgotel/actions/workflows/ci.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Tight-Line_sgotel&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Tight-Line_sgotel)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Tight-Line_sgotel&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Tight-Line_sgotel)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Tight-Line_sgotel&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Tight-Line_sgotel)
+[![Known Vulnerabilities](https://snyk.io/test/github/Tight-Line/sgotel/badge.svg)](https://snyk.io/test/github/Tight-Line/sgotel)
+
 > Welcome to the Skotel California.
 
 SGOtel ("skotel") is a small HTTP service that receives [SendGrid Event
