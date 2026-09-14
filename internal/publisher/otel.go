@@ -1,4 +1,3 @@
-// coverage:ignore-file - OTLP SDK wiring, exercised against a real collector not unit tests
 package publisher
 
 import (
@@ -7,20 +6,14 @@ import (
 	"os"
 	"strings"
 
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
-
-	"github.com/tight-line/sgotel/internal/config"
 )
 
-// coverage:ignore - exercised against a real collector, not unit tests
 // OTel groups the providers built by SetupOTel so callers can shut them down
 // in the reverse order they were created.
 type OTel struct {
@@ -30,7 +23,6 @@ type OTel struct {
 	MeterProvider  *sdkmetric.MeterProvider
 }
 
-// coverage:ignore - exercised against a real collector, not unit tests
 // Shutdown flushes and closes the providers. Honors the supplied context.
 func (o *OTel) Shutdown(ctx context.Context) error {
 	var errs []error
@@ -50,63 +42,6 @@ func (o *OTel) Shutdown(ctx context.Context) error {
 	return fmt.Errorf("otel shutdown: %v", errs)
 }
 
-// coverage:ignore - exercised against a real collector, not unit tests
-// SetupOTel constructs the OTLP-backed log + metric pipelines and returns a
-// Sink that writes to them. Protocol selection honors OTEL_EXPORTER_OTLP_PROTOCOL
-// (and per-signal overrides). Endpoint and other knobs come from the standard
-// OTel env vars, handled by the exporter constructors.
-func SetupOTel(ctx context.Context, cfg *config.Config) (*OTel, error) {
-	res, err := resource.New(ctx,
-		resource.WithAttributes(
-			semconv.ServiceName(cfg.ServiceName),
-			// service.name identifies the relay; messaging.system facets all
-			// signals as "from the SendGrid pipeline" so backends can group on it.
-			attribute.String("messaging.system", "sendgrid"),
-		),
-		resource.WithFromEnv(),
-		resource.WithProcess(),
-		resource.WithHost(),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("resource: %w", err)
-	}
-
-	logExp, err := newLogExporter(ctx)
-	if err != nil {
-		return nil, err
-	}
-	lp := log.NewLoggerProvider(
-		log.WithResource(res),
-		log.WithProcessor(log.NewBatchProcessor(logExp)),
-	)
-
-	metricExp, err := newMetricExporter(ctx)
-	if err != nil {
-		_ = lp.Shutdown(ctx)
-		return nil, err
-	}
-	mp := sdkmetric.NewMeterProvider(
-		sdkmetric.WithResource(res),
-		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExp)),
-	)
-
-	var logger = lp.Logger("github.com/tight-line/sgotel")
-	var meter = mp.Meter("github.com/tight-line/sgotel")
-
-	sink, err := newOTelSink(logger, meter, cfg.RedactEmail)
-	if err != nil {
-		_ = lp.Shutdown(ctx)
-		_ = mp.Shutdown(ctx)
-		return nil, err
-	}
-	return &OTel{
-		Sink:           sink,
-		Recorder:       sink,
-		LoggerProvider: lp,
-		MeterProvider:  mp,
-	}, nil
-}
-
 // OTLP protocol values accepted by OTEL_EXPORTER_OTLP_PROTOCOL. "http" is
 // accepted as an alias for "http/protobuf"; SGOtel does not support
 // "http/json", which the OTel spec lists as optional.
@@ -116,7 +51,6 @@ const (
 	protocolGRPC         = "grpc"
 )
 
-// coverage:ignore - exercised against a real collector, not unit tests
 func protocol(signal string) string {
 	if v := os.Getenv("OTEL_EXPORTER_OTLP_" + strings.ToUpper(signal) + "_PROTOCOL"); v != "" {
 		return v
@@ -127,7 +61,6 @@ func protocol(signal string) string {
 	return protocolHTTPProtobuf
 }
 
-// coverage:ignore - exercised against a real collector, not unit tests
 func newLogExporter(ctx context.Context) (log.Exporter, error) {
 	switch protocol("LOGS") {
 	case protocolGRPC:
@@ -139,7 +72,6 @@ func newLogExporter(ctx context.Context) (log.Exporter, error) {
 	}
 }
 
-// coverage:ignore - exercised against a real collector, not unit tests
 func newMetricExporter(ctx context.Context) (sdkmetric.Exporter, error) {
 	switch protocol("METRICS") {
 	case protocolGRPC:
