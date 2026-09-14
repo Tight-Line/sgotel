@@ -223,7 +223,7 @@ func TestNopRecorder(t *testing.T) {
 }
 
 func TestErrQueueFull_Error(t *testing.T) {
-	if got := (ErrQueueFull{}).Error(); got == "" {
+	if (ErrQueueFull{}).Error() == "" {
 		t.Errorf("ErrQueueFull message should not be empty")
 	}
 }

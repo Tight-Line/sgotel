@@ -44,7 +44,7 @@ one of the three that knows which vulnerable code SGOtel actually calls, and it
 is the only one that reports on the standard library. Run it first:
 
 ```bash
-make vulncheck    # go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+make vulncheck    # pinned govulncheck via `go run`; see the Makefile
 ```
 
 Then capture the gate status for the PRs and **for `main` too**:
@@ -126,10 +126,10 @@ accumulated by v0.0.3.
 **Correct the mental model here; ballast's copy of this skill states it
 loosely.** `govulncheck` reports against the toolchain the build actually
 resolves to, not against the text of the `go` directive. The directive is a
-floor: with `go 1.25.0` in go.mod and go1.26.4 installed, the build and the scan
-both use 1.26.4, and the findings come back against 1.26.4. Raising the
-directive helps because it raises that floor for everyone. Verify what you are
-actually scanning:
+floor: if go.mod asks for less than the toolchain you have installed, the build
+and the scan both use the installed one, and the findings come back against that
+rather than against the directive. Raising the directive helps because it raises
+that floor for everyone. Verify what you are actually scanning:
 
 ```bash
 go env GOVERSION     # what the directive resolved to
@@ -137,10 +137,18 @@ go env GOVERSION     # what the directive resolved to
 
 Bump the directive to the **latest patch on the module's current minor line**. A
 minor bump changes language semantics and vet/lint behavior and does not belong
-in a security pass **unless a dependency forces it**, which does happen: in the
-2026-09 pass `golang.org/x/net` and `golang.org/x/text` both required
-`go >= 1.26.0` from the versions carrying their fixes, so 1.25 was not reachable
-and the directive went to 1.26.8. Say so in the commit message when that is why.
+in a security pass **unless a dependency forces it or the owner asks for it**,
+both of which happened in the 2026-09 pass: `golang.org/x/net` and
+`golang.org/x/text` required `go >= 1.26.0` from the versions carrying their
+fixes, putting 1.25 out of reach, and the directive then went to **1.27.1** on
+the owner's call. SGOtel is on the **1.27.x** line; do not propose 1.26.
+Say in the commit message which of the two reasons applies.
+
+A minor bump drags the build tooling with it, so budget for that rather than
+treating it as a surprise. Go 1.27 broke two things here: golangci-lint refuses
+to start when the Go that built it is older than the version it targets, and
+coverage attribution moved, which is why `scripts/check-coverage.sh` looks two
+lines above an uncovered line for `coverage:ignore` rather than one.
 
 ```bash
 # what patch releases exist
@@ -169,11 +177,30 @@ Dockerfile. Three places to bump means in practice none of them move.
 
 The workflows now read `go-version-file: go.mod`, so the directive is the only
 place a version is written down and CI gets the exact patch instead of whatever
-the runner manifest calls "1.25" that week. **Keep it that way.** If you bump the
+the runner manifest calls that minor line this week. **Keep it that way.** If you bump the
 directive, the only other file to touch is the Dockerfile builder stage. The
 builder image and the directive do not strictly need to match (a newer toolchain
 building an older-directive module is fine), but keeping them equal removes a
 question nobody wants to re-answer.
+
+#### Do not put build tooling in go.mod
+
+Sonar's `githubactions:S8545` asks for lock-file-enforced tool versions, and Go's
+answer is a `tool` directive. **Do not take that bait here.** A tool directive
+puts the tool's whole dependency tree in this module's graph, and Snyk scans that
+graph as if it shipped in the binary.
+
+Measured in the 2026-09 pass: golangci-lint as a tool directive took the module
+graph from 95 to 452. govulncheck looked cheap at 7 modules, went in on that
+basis, and still failed the Snyk gate, because it pulls `golang.org/x/tools`,
+which pulls `goldmark`, which had an open XSS advisory. SGOtel has never
+contained a markdown renderer.
+
+Both tools are pinned in the Makefile and invoked with `go run <pkg>@<version>`
+instead. That is reproducible, keeps local and CI identical, builds the tool with
+the toolchain the `go` directive selects, and leaves go.mod at 95 modules. S8545
+stays open against any remaining `go install` line in a workflow; that is the
+accepted trade, not an oversight.
 
 #### Snyk or Sonar red for reasons that are not findings
 

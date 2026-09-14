@@ -107,6 +107,15 @@ func SetupOTel(ctx context.Context, cfg *config.Config) (*OTel, error) {
 	}, nil
 }
 
+// OTLP protocol values accepted by OTEL_EXPORTER_OTLP_PROTOCOL. "http" is
+// accepted as an alias for "http/protobuf"; SGOtel does not support
+// "http/json", which the OTel spec lists as optional.
+const (
+	protocolHTTPProtobuf = "http/protobuf"
+	protocolHTTP         = "http"
+	protocolGRPC         = "grpc"
+)
+
 // coverage:ignore - exercised against a real collector, not unit tests
 func protocol(signal string) string {
 	if v := os.Getenv("OTEL_EXPORTER_OTLP_" + strings.ToUpper(signal) + "_PROTOCOL"); v != "" {
@@ -115,15 +124,15 @@ func protocol(signal string) string {
 	if v := os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL"); v != "" {
 		return v
 	}
-	return "http/protobuf"
+	return protocolHTTPProtobuf
 }
 
 // coverage:ignore - exercised against a real collector, not unit tests
 func newLogExporter(ctx context.Context) (log.Exporter, error) {
 	switch protocol("LOGS") {
-	case "grpc":
+	case protocolGRPC:
 		return otlploggrpc.New(ctx)
-	case "http/protobuf", "http":
+	case protocolHTTPProtobuf, protocolHTTP:
 		return otlploghttp.New(ctx)
 	default:
 		return nil, fmt.Errorf("unsupported OTLP logs protocol: %q", protocol("LOGS"))
@@ -133,9 +142,9 @@ func newLogExporter(ctx context.Context) (log.Exporter, error) {
 // coverage:ignore - exercised against a real collector, not unit tests
 func newMetricExporter(ctx context.Context) (sdkmetric.Exporter, error) {
 	switch protocol("METRICS") {
-	case "grpc":
+	case protocolGRPC:
 		return otlpmetricgrpc.New(ctx)
-	case "http/protobuf", "http":
+	case protocolHTTPProtobuf, protocolHTTP:
 		return otlpmetrichttp.New(ctx)
 	default:
 		return nil, fmt.Errorf("unsupported OTLP metrics protocol: %q", protocol("METRICS"))
