@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Pin every GitHub Actions reference to a full commit SHA. All 33 `uses:`
+  entries across the six workflows previously named a mutable tag such as
+  `@v7`, which whoever holds the tag can repoint at any commit. The version
+  stays in a trailing comment so Dependabot keeps updating them.
+
+### Changed
+
+- The Helm chart now declares `ephemeral-storage` alongside cpu and memory:
+  request `64Mi`, limit `512Mi`. SGOtel writes no files, so this covers
+  container logs and the writable layer only. **Upgraders on clusters with
+  little spare node disk should check this schedules**, since a pod that
+  previously made no storage claim now makes one.
+
 ## [0.0.4] - 2026-09-14
 
 ### Security
