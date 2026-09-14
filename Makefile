@@ -4,17 +4,21 @@
 VERSION?=0.1.0
 LDFLAGS=-ldflags "-X main.version=$(VERSION)"
 
-# golangci-lint is run through `go run` at a pinned version rather than being
-# installed separately, so a contributor and CI always run the same linter, and
-# it is always built with the toolchain the `go` directive selects. A linter
-# built by an older Go than the one it targets refuses to start.
+# Build tooling is pinned and run through `go run`, so a contributor and CI
+# always use the same version and it is always built with the toolchain the
+# `go` directive selects. A linter built by an older Go than the version it
+# targets refuses to start, which Go 1.27 turned into a hard failure.
 #
-# It is deliberately not a `tool` directive in go.mod: that would pull its ~350
-# dependencies into this module's graph, where Snyk would scan lint machinery
-# that never ships in the binary. govulncheck is a tool directive because it
-# costs 7 modules and is the scanner itself.
+# Neither is a `tool` directive in go.mod, deliberately. A tool directive puts
+# the tool's dependencies in this module's graph, where Snyk scans them as if
+# they shipped in the binary. golangci-lint costs ~350 modules that way.
+# govulncheck looks cheap at 7, but it pulls golang.org/x/tools, which pulls
+# goldmark, which had an open XSS advisory: it failed the Snyk gate on a
+# markdown renderer that no SGOtel build has ever contained.
 GOLANGCI_LINT_VERSION?=v2.13.2
+GOVULNCHECK_VERSION?=v1.8.0
 GOLANGCI_LINT=go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+GOVULNCHECK=go run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 
 # Default target
 all: lint test build
@@ -85,7 +89,7 @@ setup-hooks:
 # `scripts/make-tag`, which should not fail on someone else's outage. CI runs
 # this as its own job.
 vulncheck:
-	go tool govulncheck ./...
+	$(GOVULNCHECK) ./...
 
 # Verify everything (used by CI and before releasing)
 check: lint test-coverage-check build
