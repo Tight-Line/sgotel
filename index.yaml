@@ -2,6 +2,26 @@ apiVersion: v1
 entries:
   sgotel:
   - apiVersion: v2
+    appVersion: 0.0.5
+    created: "2026-09-14T19:34:00.208704172Z"
+    description: SendGrid Event Webhook to OpenTelemetry publisher
+    digest: 2f5d05fb79bc8be5ed2f3726ea0d5bf9b731812122b9ad584e283b2543fdb43c
+    icon: https://raw.githubusercontent.com/Tight-Line/sgotel/main/charts/sgotel/icon.png
+    keywords:
+    - sendgrid
+    - webhook
+    - opentelemetry
+    - otel
+    - observability
+    maintainers:
+    - email: certs@example.com
+      name: Tight Line
+    name: sgotel
+    type: application
+    urls:
+    - https://github.com/Tight-Line/sgotel/releases/download/sgotel-0.0.5/sgotel-0.0.5.tgz
+    version: 0.0.5
+  - apiVersion: v2
     appVersion: 0.0.4
     created: "2026-09-14T18:53:22.777350328Z"
     description: SendGrid Event Webhook to OpenTelemetry publisher
@@ -81,4 +101,4 @@ entries:
     urls:
     - https://github.com/Tight-Line/sgotel/releases/download/sgotel-0.0.1/sgotel-0.0.1.tgz
     version: 0.0.1
-generated: "2026-09-14T18:53:22.777372073Z"
+generated: "2026-09-14T19:34:00.208721214Z"
