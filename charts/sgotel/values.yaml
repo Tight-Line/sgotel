@@ -100,9 +100,14 @@ resources:
   requests:
     cpu: 50m
     memory: 64Mi
+    # SGOtel writes no files; this covers the container logs and writable layer
+    # only. Declaring it lets the scheduler account for the pod's disk and stops
+    # a log-flooding pod from filling a node whose other pods made no claim.
+    ephemeral-storage: 64Mi
   limits:
     cpu: 200m
     memory: 128Mi
+    ephemeral-storage: 512Mi
 
 podAnnotations: {}
 podSecurityContext: {}
