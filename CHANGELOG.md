@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Clear seven standard library advisories that SGOtel's own code paths reach.
-  The `go` directive moves from 1.25.0 to 1.26.8, which is what determines the
+  The `go` directive moves from 1.25.0 to 1.27.1, which is what determines the
   standard library a build gets: `GO-2026-6218` (quadratic complexity in
   `net/url`), `GO-2026-6091` (`html/template` Javascript regexp context
   tracking), `GO-2026-6090` (unbounded post-handshake messages in
@@ -35,8 +35,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Emitted attribute names, types and values are unchanged.
 - Routine dependency updates: gRPC 1.83.2, protobuf 1.36.12, grpc-gateway
   2.30.0, logr 1.4.4, OTLP proto 1.11.0, genproto and `golang.org/x/sys`.
-- Build on `golang:1.26.8-alpine` and run on `alpine:3.23.5`. CI now reads the
+- Build on `golang:1.27.1-alpine` and run on `alpine:3.24.1`. CI now reads the
   Go version from `go.mod` instead of pinning it separately in each workflow.
+- Update 11 GitHub Actions, including `actions/checkout` to v7, `setup-go` to
+  v7 and the CodeQL actions to 3.29.11.
+- Pin golangci-lint to v2.13.2 and run it through `go run` from the Makefile,
+  so a contributor and CI use the same linter and it is always built by the
+  toolchain the `go` directive selects. A linter built by an older Go than the
+  one it targets refuses to start, which Go 1.27 made a hard failure.
+- Widen the `coverage:ignore` lookback in `scripts/check-coverage.sh` from one
+  line to two. Go 1.27 attributes an uncovered `if` body to the body's first
+  statement rather than to the `if`, which put the established comment
+  placement out of range at nine sites. No coverage comments moved. Reported
+  coverage falls from 72.6% to 68.7% because 1.27 counts the `if` and its body
+  as separate blocks, so the ignored defensive branches weigh more; the gate
+  fails on uncovered lines rather than a percentage.
 
 ## [0.0.3] - 2026-08-03
 
