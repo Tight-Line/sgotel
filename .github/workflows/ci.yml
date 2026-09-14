@@ -15,7 +15,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version-file: go.mod
 
       - name: Download dependencies
         run: go mod download
@@ -38,7 +38,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version-file: go.mod
 
       - name: Install golangci-lint
         run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.1
@@ -54,7 +54,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version-file: go.mod
 
       - name: Build binary
         run: CGO_ENABLED=0 go build -o bin/sgotel ./cmd/sgotel
@@ -64,3 +64,19 @@ jobs:
         with:
           name: sgotel
           path: bin/
+
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      # Reports standard-library advisories against the toolchain the `go`
+      # directive selects, so a stale directive surfaces here rather than
+      # sitting unnoticed until someone runs a scanner by hand.
+      - name: Run govulncheck
+        run: make vulncheck

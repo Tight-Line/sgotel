@@ -189,57 +189,57 @@ func (s *otelSink) emitLog(ctx context.Context, e sendgrid.Event) {
 	r.SetSeverity(sev)
 	r.SetSeverityText(sevText)
 	r.SetEventName("sendgrid." + e.Event)
-	r.SetBody(otellog.StringValue(logBody(e, s.redact)))
+	r.SetBody(attribute.StringValue(logBody(e, s.redact)))
 
-	attrs := make([]otellog.KeyValue, 0, 16)
+	attrs := make([]attribute.KeyValue, 0, 16)
 	attrs = append(attrs,
-		otellog.String("sendgrid.event", e.Event),
-		otellog.String("sendgrid.message_id", e.SGMessageID),
-		otellog.String("sendgrid.event_id", e.SGEventID),
+		attribute.String("sendgrid.event", e.Event),
+		attribute.String("sendgrid.message_id", e.SGMessageID),
+		attribute.String("sendgrid.event_id", e.SGEventID),
 	)
 	if e.SMTPID != "" {
-		attrs = append(attrs, otellog.String("sendgrid.smtp_id", e.SMTPID))
+		attrs = append(attrs, attribute.String("sendgrid.smtp_id", e.SMTPID))
 	}
 	if email := renderEmail(e.Email, s.redact); email != "" {
-		attrs = append(attrs, otellog.String("sendgrid.email", email))
+		attrs = append(attrs, attribute.String("sendgrid.email", email))
 	}
 	if len(e.Category) > 0 {
-		vals := make([]otellog.Value, len(e.Category))
+		vals := make([]attribute.Value, len(e.Category))
 		for i, c := range e.Category {
-			vals[i] = otellog.StringValue(c)
+			vals[i] = attribute.StringValue(c)
 		}
-		attrs = append(attrs, otellog.KeyValue{
+		attrs = append(attrs, attribute.KeyValue{
 			Key:   "sendgrid.category",
-			Value: otellog.SliceValue(vals...),
+			Value: attribute.SliceValue(vals...),
 		})
 	}
 	if e.Reason != "" {
-		attrs = append(attrs, otellog.String("sendgrid.bounce.reason", e.Reason))
+		attrs = append(attrs, attribute.String("sendgrid.bounce.reason", e.Reason))
 	}
 	if e.Status != "" {
-		attrs = append(attrs, otellog.String("sendgrid.bounce.status", e.Status))
+		attrs = append(attrs, attribute.String("sendgrid.bounce.status", e.Status))
 	}
 	if e.Type != "" {
-		attrs = append(attrs, otellog.String("sendgrid.bounce.type", e.Type))
+		attrs = append(attrs, attribute.String("sendgrid.bounce.type", e.Type))
 	}
 	if e.URL != "" {
-		attrs = append(attrs, otellog.String("sendgrid.url", e.URL))
+		attrs = append(attrs, attribute.String("sendgrid.url", e.URL))
 	}
 	if e.UserAgent != "" {
-		attrs = append(attrs, otellog.String("sendgrid.useragent", e.UserAgent))
+		attrs = append(attrs, attribute.String("sendgrid.useragent", e.UserAgent))
 	}
 	if e.IP != "" {
-		attrs = append(attrs, otellog.String("sendgrid.ip", e.IP))
+		attrs = append(attrs, attribute.String("sendgrid.ip", e.IP))
 	}
 	if e.Response != "" {
-		attrs = append(attrs, otellog.String("sendgrid.response", e.Response))
+		attrs = append(attrs, attribute.String("sendgrid.response", e.Response))
 	}
 	if e.Attempt != "" {
-		attrs = append(attrs, otellog.String("sendgrid.attempt", e.Attempt))
+		attrs = append(attrs, attribute.String("sendgrid.attempt", e.Attempt))
 	}
 	for k, v := range e.Custom {
-		attrs = append(attrs, otellog.KeyValue{
-			Key:   "sendgrid.custom." + k,
+		attrs = append(attrs, attribute.KeyValue{
+			Key:   attribute.Key("sendgrid.custom." + k),
 			Value: anyToLogValue(v),
 		})
 	}
@@ -322,31 +322,31 @@ func emptyToUnknown(s string) string {
 	return s
 }
 
-func anyToLogValue(v any) otellog.Value {
+func anyToLogValue(v any) attribute.Value {
 	switch t := v.(type) {
 	case string:
-		return otellog.StringValue(t)
+		return attribute.StringValue(t)
 	case bool:
-		return otellog.BoolValue(t)
+		return attribute.BoolValue(t)
 	case float64:
 		// JSON numbers decode to float64. Preserve as float; downstream can
 		// coerce to int if needed.
-		return otellog.Float64Value(t)
+		return attribute.Float64Value(t)
 	case []any:
-		vals := make([]otellog.Value, len(t))
+		vals := make([]attribute.Value, len(t))
 		for i, x := range t {
 			vals[i] = anyToLogValue(x)
 		}
-		return otellog.SliceValue(vals...)
+		return attribute.SliceValue(vals...)
 	case map[string]any:
-		kvs := make([]otellog.KeyValue, 0, len(t))
+		kvs := make([]attribute.KeyValue, 0, len(t))
 		for k, x := range t {
-			kvs = append(kvs, otellog.KeyValue{Key: k, Value: anyToLogValue(x)})
+			kvs = append(kvs, attribute.KeyValue{Key: attribute.Key(k), Value: anyToLogValue(x)})
 		}
-		return otellog.MapValue(kvs...)
+		return attribute.MapValue(kvs...)
 	case nil:
-		return otellog.StringValue("")
+		return attribute.StringValue("")
 	default:
-		return otellog.StringValue(fmt.Sprintf("%v", t))
+		return attribute.StringValue(fmt.Sprintf("%v", t))
 	}
 }

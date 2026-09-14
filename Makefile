@@ -1,4 +1,4 @@
-.PHONY: all build test test-coverage test-coverage-check clean run lint lint-fix docker fmt tidy tools setup-hooks check
+.PHONY: all build test test-coverage test-coverage-check clean run lint lint-fix docker fmt tidy tools setup-hooks check vulncheck
 
 # Build variables
 VERSION?=0.1.0
@@ -66,6 +66,14 @@ setup-hooks:
 	@cp scripts/pre-commit .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
 	@echo "Pre-commit hook installed successfully."
+
+# Scan for known vulnerabilities in dependencies and the standard library.
+#
+# Kept out of `check` on purpose: it needs vuln.go.dev, and `check` gates
+# `scripts/make-tag`, which should not fail on someone else's outage. CI runs
+# this as its own job.
+vulncheck:
+	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 
 # Verify everything (used by CI and before releasing)
 check: lint test-coverage-check build

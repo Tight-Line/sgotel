@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	otellog "go.opentelemetry.io/otel/log"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -96,30 +97,30 @@ func TestLogBody(t *testing.T) {
 }
 
 func TestAnyToLogValue(t *testing.T) {
-	if v := anyToLogValue("hi"); v.Kind() != otellog.KindString || v.AsString() != "hi" {
+	if v := anyToLogValue("hi"); v.Type() != attribute.STRING || v.AsString() != "hi" {
 		t.Errorf("string: %+v", v)
 	}
-	if v := anyToLogValue(true); v.Kind() != otellog.KindBool || v.AsBool() != true {
+	if v := anyToLogValue(true); v.Type() != attribute.BOOL || v.AsBool() != true {
 		t.Errorf("bool: %+v", v)
 	}
-	if v := anyToLogValue(float64(42)); v.Kind() != otellog.KindFloat64 || v.AsFloat64() != 42 {
+	if v := anyToLogValue(float64(42)); v.Type() != attribute.FLOAT64 || v.AsFloat64() != 42 {
 		t.Errorf("float: %+v", v)
 	}
-	if v := anyToLogValue(nil); v.Kind() != otellog.KindString || v.AsString() != "" {
+	if v := anyToLogValue(nil); v.Type() != attribute.STRING || v.AsString() != "" {
 		t.Errorf("nil: %+v", v)
 	}
-	if v := anyToLogValue([]any{"a", float64(1)}); v.Kind() != otellog.KindSlice {
-		t.Errorf("slice kind: %v", v.Kind())
+	if v := anyToLogValue([]any{"a", float64(1)}); v.Type() != attribute.SLICE {
+		t.Errorf("slice kind: %v", v.Type())
 	} else if got := v.AsSlice(); len(got) != 2 {
 		t.Errorf("slice len: %d", len(got))
 	}
-	if v := anyToLogValue(map[string]any{"k": "v"}); v.Kind() != otellog.KindMap {
-		t.Errorf("map kind: %v", v.Kind())
+	if v := anyToLogValue(map[string]any{"k": "v"}); v.Type() != attribute.MAP {
+		t.Errorf("map kind: %v", v.Type())
 	}
 	// Unknown type falls back to a stringified representation.
 	type customType struct{ X int }
-	if v := anyToLogValue(customType{X: 7}); v.Kind() != otellog.KindString {
-		t.Errorf("unknown type kind: %v", v.Kind())
+	if v := anyToLogValue(customType{X: 7}); v.Type() != attribute.STRING {
+		t.Errorf("unknown type kind: %v", v.Type())
 	}
 }
 
@@ -266,7 +267,7 @@ type emittedRecord struct {
 	body       string
 	severity   otellog.Severity
 	eventName  string
-	attributes map[string]otellog.Value
+	attributes map[string]attribute.Value
 }
 
 // recordingExporter is a sdklog.Exporter that captures every emitted record.
@@ -286,10 +287,10 @@ func (e *recordingExporter) Export(_ context.Context, records []sdklog.Record) e
 			body:       r.Body().AsString(),
 			severity:   r.Severity(),
 			eventName:  r.EventName(),
-			attributes: make(map[string]otellog.Value),
+			attributes: make(map[string]attribute.Value),
 		}
-		r.WalkAttributes(func(kv otellog.KeyValue) bool {
-			rec.attributes[kv.Key] = kv.Value
+		r.WalkAttributes(func(kv attribute.KeyValue) bool {
+			rec.attributes[string(kv.Key)] = kv.Value
 			return true
 		})
 		e.records = append(e.records, rec)
@@ -382,7 +383,7 @@ func TestOTelSink_LogAttributes(t *testing.T) {
 		}
 	}
 	cat, ok := r.attributes["sendgrid.category"]
-	if !ok || cat.Kind() != otellog.KindSlice {
+	if !ok || cat.Type() != attribute.SLICE {
 		t.Errorf("category attr: %+v ok=%v", cat, ok)
 	} else if got := cat.AsSlice(); len(got) != 1 || got[0].AsString() != "welcome" {
 		t.Errorf("category values: %+v", got)

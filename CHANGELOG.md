@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Clear seven standard library advisories that SGOtel's own code paths reach.
+  The `go` directive moves from 1.25.0 to 1.26.8, which is what determines the
+  standard library a build gets: `GO-2026-6218` (quadratic complexity in
+  `net/url`), `GO-2026-6091` (`html/template` Javascript regexp context
+  tracking), `GO-2026-6090` (unbounded post-handshake messages in
+  `crypto/tls`), `GO-2026-6089` (`ReadHeaderTimeout` skipped on the
+  unencrypted HTTP/2 check in `net/http`), `GO-2026-5972` (unbounded recursion
+  in `encoding/asn1`, reached through the webhook's public key parsing),
+  `GO-2026-5856` (Encrypted Client Hello privacy leak in `crypto/tls`) and
+  `GO-2026-5026` (ASCII-only Punycode labels accepted via `net/http`).
+- Bump `golang.org/x/net` to 0.59.0 for `GO-2026-5942` and `golang.org/x/text`
+  to 0.42.0 for `GO-2026-5970`. Both reach SGOtel through the OTLP exporters.
+- Add a `govulncheck` job to CI and a `make vulncheck` target. Nothing scanned
+  for vulnerable dependencies before, which is why the advisories above went
+  unnoticed through two releases.
+- Configure Dependabot for Go modules, GitHub Actions and Docker. Security
+  updates arrive as their own pull requests so they can be released without
+  waiting on a routine batch.
+
+### Changed
+
+- Update OpenTelemetry to 1.46.0 and the logs bridge to 0.22.0. The bridge now
+  uses `attribute.Value` and `attribute.KeyValue` in place of its own types.
+  Emitted attribute names, types and values are unchanged.
+- Routine dependency updates: gRPC 1.83.2, protobuf 1.36.12, grpc-gateway
+  2.30.0, logr 1.4.4, OTLP proto 1.11.0, genproto and `golang.org/x/sys`.
+- Build on `golang:1.26.8-alpine` and run on `alpine:3.23.5`. CI now reads the
+  Go version from `go.mod` instead of pinning it separately in each workflow.
+
 ## [0.0.3] - 2026-08-03
 
 ### Security
