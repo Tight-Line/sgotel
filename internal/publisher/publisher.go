@@ -33,8 +33,15 @@ type RequestRecorder interface {
 // NopRecorder is a RequestRecorder that drops all calls. Useful in tests.
 type NopRecorder struct{}
 
-func (NopRecorder) RecordBatch(context.Context, int)      {}
-func (NopRecorder) RecordRequest(context.Context, string) {}
+func (NopRecorder) RecordBatch(context.Context, int) {
+	// Intentionally empty. NopRecorder exists so a caller that does not want
+	// request metrics can satisfy RequestRecorder, instead of the handler
+	// nil-checking its recorder on every call.
+}
+
+func (NopRecorder) RecordRequest(context.Context, string) {
+	// Intentionally empty; see RecordBatch.
+}
 
 // Publisher buffers events and fans them out to a Sink via a worker pool.
 // Webhook handlers should call Enqueue; the publisher decouples webhook ack
