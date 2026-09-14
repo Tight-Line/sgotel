@@ -190,19 +190,41 @@ func (s *otelSink) emitLog(ctx context.Context, e sendgrid.Event) {
 	r.SetSeverityText(sevText)
 	r.SetEventName("sendgrid." + e.Event)
 	r.SetBody(attribute.StringValue(logBody(e, s.redact)))
+	r.AddAttributes(s.logAttrs(e)...)
 
+	s.logger.Emit(ctx, r)
+}
+
+// logAttrs builds the attribute set for one event. Split out of emitLog so
+// neither half carries the whole event schema's branching.
+func (s *otelSink) logAttrs(e sendgrid.Event) []attribute.KeyValue {
 	attrs := make([]attribute.KeyValue, 0, 16)
 	attrs = append(attrs,
 		attribute.String("sendgrid.event", e.Event),
 		attribute.String("sendgrid.message_id", e.SGMessageID),
 		attribute.String("sendgrid.event_id", e.SGEventID),
 	)
-	if e.SMTPID != "" {
-		attrs = append(attrs, attribute.String("sendgrid.smtp_id", e.SMTPID))
+
+	// Optional scalars. SendGrid sends these only for the event types they
+	// apply to, and an absent field stays absent rather than being emitted as
+	// an empty string.
+	for _, opt := range []struct{ key, val string }{
+		{"sendgrid.smtp_id", e.SMTPID},
+		{"sendgrid.email", renderEmail(e.Email, s.redact)},
+		{"sendgrid.bounce.reason", e.Reason},
+		{"sendgrid.bounce.status", e.Status},
+		{"sendgrid.bounce.type", e.Type},
+		{"sendgrid.url", e.URL},
+		{"sendgrid.useragent", e.UserAgent},
+		{"sendgrid.ip", e.IP},
+		{"sendgrid.response", e.Response},
+		{"sendgrid.attempt", e.Attempt},
+	} {
+		if opt.val != "" {
+			attrs = append(attrs, attribute.String(opt.key, opt.val))
+		}
 	}
-	if email := renderEmail(e.Email, s.redact); email != "" {
-		attrs = append(attrs, attribute.String("sendgrid.email", email))
-	}
+
 	if len(e.Category) > 0 {
 		vals := make([]attribute.Value, len(e.Category))
 		for i, c := range e.Category {
@@ -213,39 +235,13 @@ func (s *otelSink) emitLog(ctx context.Context, e sendgrid.Event) {
 			Value: attribute.SliceValue(vals...),
 		})
 	}
-	if e.Reason != "" {
-		attrs = append(attrs, attribute.String("sendgrid.bounce.reason", e.Reason))
-	}
-	if e.Status != "" {
-		attrs = append(attrs, attribute.String("sendgrid.bounce.status", e.Status))
-	}
-	if e.Type != "" {
-		attrs = append(attrs, attribute.String("sendgrid.bounce.type", e.Type))
-	}
-	if e.URL != "" {
-		attrs = append(attrs, attribute.String("sendgrid.url", e.URL))
-	}
-	if e.UserAgent != "" {
-		attrs = append(attrs, attribute.String("sendgrid.useragent", e.UserAgent))
-	}
-	if e.IP != "" {
-		attrs = append(attrs, attribute.String("sendgrid.ip", e.IP))
-	}
-	if e.Response != "" {
-		attrs = append(attrs, attribute.String("sendgrid.response", e.Response))
-	}
-	if e.Attempt != "" {
-		attrs = append(attrs, attribute.String("sendgrid.attempt", e.Attempt))
-	}
 	for k, v := range e.Custom {
 		attrs = append(attrs, attribute.KeyValue{
 			Key:   attribute.Key("sendgrid.custom." + k),
 			Value: anyToLogValue(v),
 		})
 	}
-	r.AddAttributes(attrs...)
-
-	s.logger.Emit(ctx, r)
+	return attrs
 }
 
 func (s *otelSink) emitMetrics(ctx context.Context, e sendgrid.Event) {

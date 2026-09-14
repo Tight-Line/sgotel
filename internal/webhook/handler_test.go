@@ -273,7 +273,7 @@ func TestHandler_EnqueueTimeout(t *testing.T) {
 	if got := f.rec.lastRequest(); got != resultEnqueueTimeout {
 		t.Errorf("result: %q", got)
 	}
-	if got := rr.Header().Get("Retry-After"); got == "" {
+	if rr.Header().Get("Retry-After") == "" {
 		t.Errorf("expected Retry-After header on shed response")
 	}
 }
