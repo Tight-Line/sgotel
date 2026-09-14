@@ -1,0 +1,57 @@
+version: 2
+
+updates:
+  # Go modules. Security bumps arrive on their own so they can be reviewed and
+  # released without waiting on the weekly batch; everything else is grouped
+  # into one PR to keep the CI matrix from running five times over.
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
+    groups:
+      gomod-minor-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+      gomod-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Both the builder and the runtime stage. Dependabot does not touch the `go`
+  # directive in go.mod, so a stdlib advisory still has to be cleared by hand;
+  # the govulncheck CI job is what surfaces it.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    commit-message:
+      prefix: chore
+      include: scope
