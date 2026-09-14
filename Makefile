@@ -4,6 +4,18 @@
 VERSION?=0.1.0
 LDFLAGS=-ldflags "-X main.version=$(VERSION)"
 
+# golangci-lint is run through `go run` at a pinned version rather than being
+# installed separately, so a contributor and CI always run the same linter, and
+# it is always built with the toolchain the `go` directive selects. A linter
+# built by an older Go than the one it targets refuses to start.
+#
+# It is deliberately not a `tool` directive in go.mod: that would pull its ~350
+# dependencies into this module's graph, where Snyk would scan lint machinery
+# that never ships in the binary. govulncheck is a tool directive because it
+# costs 7 modules and is the scanner itself.
+GOLANGCI_LINT_VERSION?=v2.13.2
+GOLANGCI_LINT=go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+
 # Default target
 all: lint test build
 
@@ -36,11 +48,11 @@ clean:
 
 # Run linter
 lint:
-	golangci-lint run ./...
+	$(GOLANGCI_LINT) run ./...
 
 # Run linter and fix issues automatically where possible
 lint-fix:
-	golangci-lint run --fix ./...
+	$(GOLANGCI_LINT) run --fix ./...
 
 # Build Docker image
 docker:
@@ -55,9 +67,9 @@ fmt:
 tidy:
 	go mod tidy
 
-# Install development tools
+# Install development tools. golangci-lint and govulncheck are not here:
+# both are version-pinned and fetched on demand by their own targets.
 tools:
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 	go install golang.org/x/tools/cmd/goimports@latest
 
 # Set up git hooks for development
@@ -73,7 +85,7 @@ setup-hooks:
 # `scripts/make-tag`, which should not fail on someone else's outage. CI runs
 # this as its own job.
 vulncheck:
-	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+	go tool govulncheck ./...
 
 # Verify everything (used by CI and before releasing)
 check: lint test-coverage-check build

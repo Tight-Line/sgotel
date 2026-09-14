@@ -8,7 +8,18 @@
 #
 # Mark untestable code with: // coverage:ignore - <reason>
 #
-# The comment must be on the same line as the uncovered code, or the line before.
+# The comment must be on the same line as the uncovered code, or within the two
+# lines above it.
+#
+# Two rather than one because Go 1.27 changed how coverage blocks are attributed:
+# an uncovered `if` body is now reported at the body's first statement rather
+# than at the `if` itself, so the usual
+#
+#   // coverage:ignore - reason
+#   if err != nil {
+#       return err
+#
+# puts the comment two lines above the reported line instead of one.
 #
 # Mark an ENTIRE file as exempt by placing a comment containing
 #   coverage:ignore-file - <reason>
@@ -52,8 +63,8 @@ while IFS= read -r line; do
     fi
 
     # Check if line or previous line has coverage:ignore
-    PREV_LINE=$((START_LINE - 1))
-    CONTEXT=$(sed -n "${PREV_LINE},${START_LINE}p" "$REL_PATH" 2>/dev/null || true)
+    CONTEXT_START=$(( START_LINE - 2 > 0 ? START_LINE - 2 : 1 ))
+    CONTEXT=$(sed -n "${CONTEXT_START},${START_LINE}p" "$REL_PATH" 2>/dev/null || true)
 
     if ! echo "$CONTEXT" | grep -q "coverage:ignore"; then
         ERRORS="${ERRORS}${REL_PATH}:${START_LINE}\n"
@@ -84,8 +95,8 @@ if [[ "$1" == "--codecov" ]]; then
                     echo "$line" | sed 's/ 0$/ 1/'
                     continue
                 fi
-                PREV_LINE=$((START_LINE - 1))
-                CONTEXT=$(sed -n "${PREV_LINE},${START_LINE}p" "$REL_PATH" 2>/dev/null || true)
+                CONTEXT_START=$(( START_LINE - 2 > 0 ? START_LINE - 2 : 1 ))
+                CONTEXT=$(sed -n "${CONTEXT_START},${START_LINE}p" "$REL_PATH" 2>/dev/null || true)
                 if echo "$CONTEXT" | grep -q "coverage:ignore"; then
                     # Mark as covered for Codecov
                     echo "$line" | sed 's/ 0$/ 1/'

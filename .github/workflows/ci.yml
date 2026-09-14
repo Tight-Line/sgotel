@@ -40,11 +40,10 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.1
-
+      # Via make so CI and a contributor's machine run the same pinned linter,
+      # built by the toolchain the `go` directive selects.
       - name: Run golangci-lint
-        run: golangci-lint run
+        run: make lint
 
   build:
     runs-on: ubuntu-latest
