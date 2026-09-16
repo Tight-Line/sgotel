@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7] - 2026-09-16
+
 ### Security
 
 - Upgrade Alpine packages in the runtime stage of the image. `alpine:3.24.1`
