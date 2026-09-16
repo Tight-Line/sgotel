@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Upgrade Alpine packages in the runtime stage of the image. `alpine:3.24.1`
+  still ships `libcrypto3`/`libssl3` at 3.5.7-r0, which carries twenty open
+  advisories including `CVE-2026-14456` (HIGH); the v3.24 apk repository has
+  the fixed 3.5.8-r0 and no newer base image tag exists to pick it up. Running
+  `apk upgrade` at build time takes patched packages whenever the repo gets
+  ahead of the tag, rather than waiting for a 3.24.2 that may never ship.
+
 ## [0.0.5] - 2026-09-14
 
 ### Security
